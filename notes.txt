@@ -1,0 +1,38 @@
+# 3/7/2025 #
+
+Desired functions to implement for a portable Xlisp-Stat desktop calculator application:
+
+1. Paschen's Formula for arcing between a gap in air. 
+   - Name: paschen-breakdown
+   - Variables: atomospheric pressure - kilo-Pascals
+     		gap distance          - meters
+   - Output:    breakdown voltage     - Volts
+
+2. Metal-Insulator-Metal Capacitor Dielectric Constant calculation:
+   - Name: calculate-dielectric-constant
+   - Variables: capacitance - Farads
+     		thickness   - meters
+   		area        - meters squared
+   - Output: dielectric constant - unitless
+
+3. Metal-Insulator-Metal Capacitor Dielectric Constant calculation from two capacitors in series:
+   - Name: calculate-dielectric-constnat-capseries
+   - Variables: capacitance - Farads
+     		thickness 1 - meters
+		thickness 2 - meters
+		area 1 - meters squared
+		area 2 - meters squared
+     
+# 4/2/2025 #
+
+Making progress in making this old Sparcstation 10 a useful calculator for work: 
+
+1. Added init.lsp in /home/jovan/.emacs.d/site-lisp/init.lsp to load automatically with xlisp-stat
+2. init.lsp calls /home/jovan/devel/Xlisp_code/my-environment.lsp
+3. my-environment.lsp calls /home/jovan/devel/Xlisp_code/my-electrical.lsp and /home/jovan/devel/Xlisp_code/quantum/my-quantum.lsp
+
+I have XLISP-STAT running on this Sparcstation 10 without graphics, on ma.sdf.org with graphics, on both PowerMacs with graphics,
+and on Windows via WSL-UBUNTU, with graphics. Got all but the Mac linked into Emacs too, which is a nice little devleopment environment for me. 
+
+Need to document all the new functions I have added better too. Maybe this is the time for Org-mode to shine! 
+

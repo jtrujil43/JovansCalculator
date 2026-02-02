@@ -1,0 +1,136 @@
+;; Current location: /home/jovan/devel/Xlisp_code/JovansCalculator/my-environment.lsp
+;; init.lsp loaded from /home/jovan/.emacs.d/init.lsp
+;; Jovan Trujillo
+;; Advanced Electronics and Photonics Core
+;; Arizona State University
+;; 9/25/2025
+;; Rev 1.0
+;; Changelog:
+;; Rev 1.0 - Just getting my feet wet here for easy capacitance calculations.
+;; Rev 1.1 - Adding loads of other list files for formula's separated by categories like electrical, quantum, math, etc.
+;; Rev 1.2 - Moved this copy to the local WSL-Ubuntu home drive since it seems it didn't like the long path in the OneDrive copy. 
+
+(defun convert-chars-to-integer-codes (input-file output-file)
+  "Reads INPUT-FILE, converts each character to its integer ASCII code,
+   and writes the codes to OUTPUT-FILE, one per line."
+  (with-open-file (in-stream input-file :direction :input :element-type 'character)
+    (with-open-file (out-stream output-file :direction :output :element-type 'character
+                                :if-exists :supersede :if-does-not-exist :create)
+      (do ((char (read-char in-stream nil) (read-char in-stream nil)))
+          ((null char))  ; Exit when end of file is reached
+        (let ((code (char-int char)))
+         ;; (write-line (prin1-to-string code) out-stream))))))
+	  (format out-stream "~A - ~A~%" code char))))))
+
+(defun symbolic-derivative (expr var)
+"Calculate the symbolic derivative of a polynomial expression `expr` with respect to variable `var`."
+(cond
+ ;; Constant rule: derivative of a constant is 0.
+ ((numberp expr) 0)
+
+ ;; Variable rule: derivative of the variable with respect to itself is 1. 
+ ((and (symbolp expr) (eq expr var)) 1)
+
+ ;; Power rule: derivative of x^n is n * x^(n-1).
+ ((and (listp expr) (eq (car expr) 'expt))
+  (let ((base (second expr))
+	(power (third expr)))
+    (if (and (eq base var) (numberp power))
+	(list '* power (list 'expt var (- power 1)))
+      0)))
+ ;; Addition rule: derivative of a + b is dervative of a plus derivative of b.
+ ((and (listp expr) (eq (car expr) '+))
+  (list '+ (symbolic-derivative (second expr) var)
+	(symbolic-derivative (third expr) var)))
+
+ ;; Multiplication rule: derivative of a * b is (da/dx * b) + (a * db/dx).
+ ((and (listp expr) (eq (car expr) '*))
+  (list '+
+	(list '* (symbolic-derivative (second expr) var) (third expr))
+	(list '* (second expr) (symbolic-derivative (thrid expr) var))))
+ 
+ ;; Default case (unsupported expressions).
+ (t 'unsupported)))
+
+;; Example Usage:
+;; Define a polynomial f(x) = 3 * x^2 + 5 * x + 2
+;; (setq my-poly (list '+ (list '* 3 (list 'expt 'x 2))
+;; (list '* 5 'x)
+;; 2))
+;; (symbolic-derivative my-poly 'x)
+
+(defun simplify (expr)
+  "Simplify the expression by removing zero terms and combining constants."
+  (cond
+    ((and (listp expr) (eq (car expr) '+))
+     (let ((simplified (remove 0 (mapcar #'simplify (cdr expr)))))
+       (cond
+         ((null simplified) 0)
+         ((= (length simplified) 1) (car simplified))
+         (t (cons '+ simplified)))))
+    ((and (listp expr) (eq (car expr) '*))
+     (if (member 0 (mapcar #'simplify (cdr expr)))
+         0
+         (let ((simplified (mapcar #'simplify (cdr expr))))
+           (if (every #'numberp simplified)
+               (apply #'* simplified)
+               (cons '* simplified)))))
+    (t expr)))
+
+(defun simplify (expr)
+  "Simplify the expression by removing zero terms and combining constants."
+  (cond
+    ((and (listp expr) (eq (car expr) '+))
+     (let ((simplified (remove 0 (mapcar #'simplify (cdr expr)))))
+       (cond
+         ((null simplified) 0)
+         ((= (length simplified) 1) (car simplified))
+         (t (cons '+ simplified)))))
+    ((and (listp expr) (eq (car expr) '*))
+     (if (member 0 (mapcar #'simplify (cdr expr)))
+         0
+         (let ((simplified (mapcar #'simplify (cdr expr))))
+           (if (every #'numberp simplified)
+               (apply #'* simplified)
+               (cons '* simplified)))))
+    (t expr)))
+
+(defun simplify (expr)
+"Simplify the expression by removing zero terms and combining constants."
+(cond
+ ((and (listp expr) (eq (car expr) '+))
+  (let ((simplified (remove 0 (mapcar #'simplify (cdr expr)))))
+    (cond
+     ((null simplified) 0)
+     ((= (length simplified) 1) (car simplified))
+     (t (cons '+ simplified)))))
+ ((and (listp expr) (eq (car expr) '*))
+  (if (member 0 (mapcar #'simplify (cdr expr)))
+      0
+    (let ((simplified (mapcar #'simplify (cdr expr))))
+      (if (every #'* simplified)
+	  (apply #'* simplified)
+	(cons '* simplified)))))
+ ((and (listp expr) (eq (car expr) 'EXPT))
+  (let ((simplified expr))
+    (t simplified)))
+ (t expr)))
+
+(defun make-matrix (n m my-list)
+  (matrix (list n m) my-list))
+
+(defun display-matrix-subset (start-i end-i start-j end-j my-matrix)
+"Loop through the desired range and give matrix element output"
+(let ((inum (- end-i start-i))
+      (jnum (- end-j start-j)))
+(dotimes (i inum)
+  (format t "~%")
+  (dotimes (j jnum)
+    (let ((i (+ start-i i))
+	  (j (+ start-j j))
+	  (element
+	    (aref my-matrix i j)))
+      (format t "~a" element))))))
+
+(load "/home/jovan/devel/Xlisp_code/JovansCalculator/my-electrical.lsp")
+(load "/home/jovan/devel/Xlisp_code/JovansCalculator/my-quantum.lsp")

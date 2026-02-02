@@ -1,0 +1,71 @@
+;; my-electrical.lsp
+;; Current location: /home/jovan/devel/Xlisp_code/my-electrical.lsp
+;; Jovan Trujillo
+;; Advanced Electronics and Photonics Core 
+;; Arizona State University
+;; 4/2/2025
+;; Rev 1.0
+;; Changelog:
+;; Rev 1.0 - Added dielectric constant calculations. 
+
+(defconstant epsilon_0 8.854E-12)
+
+(defun calculate-capacitor-area (capacitance k thickness)
+"Calculate the area of a capacitor"
+(let* ((area (/ (capacitance thickness) (epsilon_0 k))))
+area))
+
+(defun calculate-capacitance (area k thickness)
+"Calculate the capacitance of a single capacitor"
+(let* (( capacitance (/ (* area epsilon_0 k) thickness)))
+capacitance))
+
+(defun calculate-capacitance-series (area1 area2 k1 k2 thickness1 thickness2)
+"Calculate the total capacitance for two capacitors in series"
+(let* ((capacitance1 (/ (* area1 epsilon_0 k1) thickness1))
+       (capacitance2 (/ (* area2 epsilon_0 k2) thickness2))
+       (capacitance (/ 1 (+ (/ 1 capacitance1) (/ 1 capacitance2)))))
+capacitance))
+
+(defun calculate-capacitance-parallel (area1 area2 k2 k2 thickness1 thickness2)
+"Calculate the total capacitance for two capacitors in parallel"
+(let* ((capacitance1 (/ (* area1 epsilon_0 k1) thickness1))
+       (capacitance2 (/ (* area2 epsilon_0 k2) thickness2))
+       (capacitance (+ capacitance1 capacitance2)))
+capacitance))
+
+(defun calculate-capacitor-thickness (capacitance k area)
+"Calculate the thickness of a parallel plate capacitor based on capacitance."
+(let* ((thickness (/ (* area epsilon_0 k) capacitance)))
+thickness))
+
+(defun calculate-dielectric-constant (capacitance thickness area)
+  "Calculate the dielectric constant of a capacitor"
+  (let* ((epsilon_0 8.854e-12) ; Permittivity of free space
+	 (dielectric-constant (/ (* capacitance thickness)
+				 (* area epsilon_0))))
+    dielectric-constant))
+
+(defun calculate-dielectric-constant-capseries (capacitance thickness area1 area2)
+  "calculate the dielectric constant of a capacitor from two capacitors in series."
+  (let* ((epsilon_0 8.854e-12) ; Permittivity of free space
+	 (dielectric-constant (* (/ (* capacitance thickness)
+				 epsilon_0) (/ (+ area1 area2) (* area1 area2)))))
+	 dielectric-constant))
+
+(defun paschen-breakdown-voltage (pressure gap)
+"Breakdown voltage calculation using Paschen's law"
+;; pressure - kilo-Pascals, 1 atm = 101.325 kPa
+;; gap      - probe needle gap in meters
+(let* ((gamma_se 2204.21513347591)
+       (A (/ 112.50 100)) ;; kPa-cm coefficient
+       (B (/ 2727.50 100)) ;; V/(kPa-cm) coefficient
+       (T1 (+ 1 (/ 1 gamma_se)))
+       (T2 (log (log T1)))
+       (T3 (log (* A pressure gap)))
+       (T4 (- T3 T2))
+       (T5 (* B pressure gap))
+       (Vb (/ T5 T4)))
+Vb))
+
+
