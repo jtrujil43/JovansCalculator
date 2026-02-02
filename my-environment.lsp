@@ -22,14 +22,12 @@
          ;; (write-line (prin1-to-string code) out-stream))))))
 	  (format out-stream "~A - ~A~%" code char))))))
 
-
-
-
-
-
-
-(load "/home/jovan/devel/Xlispstat_code/JovansCalculator/my-math.lsp")
-(load "/home/jovan/devel/Xlispstat_code/JovansCalculator/my-matrix.lsp")
-(load "/home/jovan/devel/Xlispstat_code/JovansCalculator/my-electrical.lsp")
-(load "/home/jovan/devel/Xlispstat_code/JovansCalculator/my-quantum.lsp")
-(load "/home/jovan/devel/Xlispstat_code/JovansCalculator/help.lsp")
+;; Load files relative to this file's location
+(let ((base-dir (make-pathname :directory (pathname-directory *load-pathname*))))
+  (load (merge-pathnames "my-math.lsp" base-dir))
+  (load (merge-pathnames "my-matrix.lsp" base-dir))
+  (load (merge-pathnames "my-electrical.lsp" base-dir))
+  (load (merge-pathnames "my-quantum.lsp" base-dir))
+  (load (merge-pathnames "my-chemistry.lsp" base-dir))
+  (load (merge-pathnames "nonAbelian-Braid-Statistics.lsp" base-dir))
+  (load (merge-pathnames "help.lsp" base-dir)))

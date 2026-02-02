@@ -36,3 +36,6 @@ and on Windows via WSL-UBUNTU, with graphics. Got all but the Mac linked into Em
 
 Need to document all the new functions I have added better too. Maybe this is the time for Org-mode to shine! 
 
+# 2/2/2026 # 
+Added a nice help system thanks to GitHub CoPilot. Now I can add a general assortment of functions related to my favorite topics with just a simple prompt. 
+
