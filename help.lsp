@@ -178,6 +178,119 @@
         :category "Electrical Engineering"
         :example "(copper-film-thickness 0.1)")
       
+      ;; RF Testing Functions
+      (make-function-info
+        :name "watts-to-dbm"
+        :description "Convert power from Watts to dBm."
+        :parameters "(power-watts)"
+        :category "Electrical Engineering"
+        :example "(watts-to-dbm 0.001)")
+      
+      (make-function-info
+        :name "dbm-to-watts"
+        :description "Convert power from dBm to Watts."
+        :parameters "(power-dbm)"
+        :category "Electrical Engineering"
+        :example "(dbm-to-watts 0)")
+      
+      (make-function-info
+        :name "reflection-coefficient"
+        :description "Calculate reflection coefficient Γ = (ZL - Z0)/(ZL + Z0)."
+        :parameters "(zload z0)"
+        :category "Electrical Engineering"
+        :example "(reflection-coefficient 75 50)")
+      
+      (make-function-info
+        :name "vswr-from-reflection"
+        :description "Calculate VSWR from reflection coefficient magnitude."
+        :parameters "(gamma-magnitude)"
+        :category "Electrical Engineering"
+        :example "(vswr-from-reflection 0.2)")
+      
+      (make-function-info
+        :name "return-loss"
+        :description "Calculate return loss in dB from reflection coefficient magnitude."
+        :parameters "(gamma-magnitude)"
+        :category "Electrical Engineering"
+        :example "(return-loss 0.1)")
+      
+      (make-function-info
+        :name "characteristic-impedance"
+        :description "Calculate characteristic impedance Z0 = sqrt(L/C) for transmission line."
+        :parameters "(inductance-per-length capacitance-per-length)"
+        :category "Electrical Engineering"
+        :example "(characteristic-impedance 2.5e-7 1e-10)")
+      
+      (make-function-info
+        :name "cable-loss"
+        :description "Calculate total cable loss in dB."
+        :parameters "(loss-per-length length-meters)"
+        :category "Electrical Engineering"
+        :example "(cable-loss 0.2 10)")
+      
+      (make-function-info
+        :name "quarter-wave-transformer-impedance"
+        :description "Calculate impedance of quarter-wave transformer for impedance matching."
+        :parameters "(z1 z2)"
+        :category "Electrical Engineering"
+        :example "(quarter-wave-transformer-impedance 50 75)")
+      
+      (make-function-info
+        :name "noise-figure-db"
+        :description "Calculate noise figure in dB from signal and noise levels."
+        :parameters "(signal-in signal-out noise-in noise-out)"
+        :category "Electrical Engineering"
+        :example "(noise-figure-db 1.0 10.0 0.01 0.05)")
+      
+      (make-function-info
+        :name "friis-noise-formula"
+        :description "Calculate total noise figure of cascaded amplifiers using Friis formula."
+        :parameters "(nf1-db nf2-db gain1-db)"
+        :category "Electrical Engineering"
+        :example "(friis-noise-formula 3.0 6.0 20.0)")
+      
+      (make-function-info
+        :name "resonant-frequency-lc"
+        :description "Calculate resonant frequency for LC circuit: f = 1/(2π√LC)."
+        :parameters "(inductance capacitance)"
+        :category "Electrical Engineering"
+        :example "(resonant-frequency-lc 1e-6 1e-9)")
+      
+      (make-function-info
+        :name "free-space-path-loss"
+        :description "Calculate free space path loss in dB for RF link analysis."
+        :parameters "(distance-km frequency-mhz)"
+        :category "Electrical Engineering"
+        :example "(free-space-path-loss 1.0 1000)")
+      
+      (make-function-info
+        :name "effective-radiated-power"
+        :description "Calculate effective radiated power (ERP) in dBm."
+        :parameters "(transmitter-power-dbm antenna-gain-dbi cable-loss-db)"
+        :category "Electrical Engineering"
+        :example "(effective-radiated-power 30 6 2)")
+      
+      (make-function-info
+        :name "link-budget"
+        :description "Calculate received power in RF link budget analysis."
+        :parameters "(tx-power-dbm tx-gain-dbi rx-gain-dbi path-loss-db cable-losses-db)"
+        :category "Electrical Engineering"
+        :example "(link-budget 30 6 6 100 3)")
+      
+      (make-function-info
+        :name "dipole-length"
+        :description "Calculate half-wave dipole antenna length in meters."
+        :parameters "(frequency-mhz)"
+        :category "Electrical Engineering"
+        :example "(dipole-length 100)")
+      
+      (make-function-info
+        :name "tdr-distance-to-fault"
+        :description "Calculate distance to fault from time domain reflectometry measurement."
+        :parameters "(time-ns velocity-factor)"
+        :category "Electrical Engineering"
+        :example "(tdr-distance-to-fault 100 0.66)")
+      
       ;; Quantum Physics Functions
       (make-function-info
         :name "make-complex"
@@ -687,8 +800,18 @@
         (setf (cdr (assoc cat categories :test #'string=))
               (append (cdr (assoc cat categories :test #'string=)) (list func)))))
     
+    ;; Sort functions alphabetically within each category
+    (dolist (category categories)
+      (setf (cdr category)
+            (sort (cdr category)
+                  (lambda (a b)
+                    (string< (function-info-name a) (function-info-name b))))))
+    
+    ;; Sort categories alphabetically
+    (setf categories (sort categories (lambda (a b) (string< (car a) (car b)))))
+    
     ;; Display by category
-    (dolist (category (reverse categories))
+    (dolist (category categories)
       (format t "~A:~%" (car category))
       (dolist (func (cdr category))
         (format t "  ~2d. ~A~%" index (function-info-name func))
@@ -698,6 +821,7 @@
     (format t "Usage: (help-function <index>)  - Get detailed help for function~%")
     (format t "       (help)                   - Show this help menu~%")
     (format t "       (help-category \"name\")   - Show functions in a category~%")
+    (format t "       (list-categories-only)   - Show just category names~%")
     (format t "============================================~%")))
 
 ;; Get detailed help for a specific function by index
@@ -727,19 +851,33 @@
   (format t "~%Functions in category '~A':~%" category-name)
   (format t "============================================~%")
   
-  (let ((index 1)
+  (let ((category-functions '())
+        (index 1)
         (found nil))
+    
+    ;; Collect functions in the specified category
     (dolist (func *help-functions*)
       (when (string= (function-info-category func) category-name)
-        (format t "~2d. ~A - ~A~%" 
-                index 
-                (function-info-name func)
-                (function-info-description func))
-        (setf found t))
-      (incf index))
+        (push func category-functions)
+        (setf found t)))
     
-    (unless found
-      (format t "No functions found in category '~A'.~%" category-name))
+    (if found
+        (progn
+          ;; Sort functions alphabetically
+          (setf category-functions 
+                (sort category-functions
+                      (lambda (a b)
+                        (string< (function-info-name a) (function-info-name b)))))
+          
+          ;; Display sorted functions
+          (dolist (func category-functions)
+            (format t "~2d. ~A - ~A~%" 
+                    index 
+                    (function-info-name func)
+                    (function-info-description func))
+            (incf index)))
+        (format t "No functions found in category '~A'.~%" category-name))
+    
     (format t "============================================~%")))
 
 ;; Quick search function
@@ -974,25 +1112,58 @@
   (format stream "(format t \"Type (help) to see all available functions.~%\")~%")
   (format stream "(format t \"Type (add-help-function) to add new functions.~%\")~%"))
 
-(defun list-categories ()
-  "List all available categories in the help system."
+(defun list-categories-only ()
+  "List only the category names without functions."
+  (unless *help-functions*
+    (initialize-help-system))
+  
   (let ((categories '()))
     (dolist (func *help-functions*)
       (let ((cat (function-info-category func)))
         (unless (member cat categories :test #'string=)
           (push cat categories))))
     
-    (format t "~%Available categories:~%")
-    (dolist (cat (sort categories #'string<))
-      (format t "  - ~A~%" cat))
-    (format t "~%")))
+    (setf categories (sort categories #'string<))
+    
+    (format t "~%Available Categories:~%")
+    (format t "=====================~%")
+    (dolist (cat categories)
+      (format t "  • ~A~%" cat))
+    (format t "~%Use (help-category \"category-name\") to see functions in a category.~%")
+    categories))
+
+(defun list-categories ()
+  "List all available categories in the help system with function counts."
+  (unless *help-functions*
+    (initialize-help-system))
+  
+  (let ((category-counts '()))
+    (dolist (func *help-functions*)
+      (let ((cat (function-info-category func)))
+        (let ((entry (assoc cat category-counts :test #'string=)))
+          (if entry
+              (incf (cdr entry))
+              (push (cons cat 1) category-counts)))))
+    
+    (setf category-counts (sort category-counts (lambda (a b) (string< (car a) (car b)))))
+    
+    (format t "~%Available categories with function counts:~%")
+    (format t "==========================================~%")
+    (dolist (cat-count category-counts)
+      (format t "  • ~A (~D function~P)~%" 
+              (car cat-count) 
+              (cdr cat-count)
+              (cdr cat-count)))
+    (format t "~%Use (help-category \"category-name\") to see functions in a category.~%")
+    (format t "Use (list-categories-only) for a simple category list.~%"))
 
 ;; Display a welcome message
 (format t "~%Help system loaded successfully!~%")
 (format t "Type (help) to see all available functions.~%")
 (format t "Interactive help management:~%")
-(format t "  (add-help-function)     - Add new function~%")
+(format t "  (add-help-function)         - Add new function~%")
 (format t "  (edit-help-function \"name\") - Edit existing function~%") 
 (format t "  (remove-help-function \"name\") - Remove function~%")
-(format t "  (save-help-file)        - Save changes to disk~%")
-(format t "  (list-categories)       - Show all categories~%")
+(format t "  (save-help-file)            - Save changes to disk~%")
+(format t "  (list-categories)           - Show categories with counts~%")
+(format t "  (list-categories-only)      - Show just category names~%")

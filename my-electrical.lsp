@@ -217,4 +217,185 @@ Vb))
       (format t "  ~8A   ~12A~%" (first row) (second row)))
     rows))
 
+;; RF Testing Functions
+
+;; Power conversion functions
+(defun watts-to-dbm (power-watts)
+  "Convert power from Watts to dBm."
+  (+ 10 (* 10 (log (/ power-watts 0.001) 10))))
+
+(defun dbm-to-watts (power-dbm)
+  "Convert power from dBm to Watts."
+  (* 0.001 (expt 10 (/ power-dbm 10))))
+
+(defun dbm-to-dbw (power-dbm)
+  "Convert power from dBm to dBW."
+  (- power-dbm 30))
+
+(defun dbw-to-dbm (power-dbw)
+  "Convert power from dBW to dBm."
+  (+ power-dbw 30))
+
+(defun power-to-voltage (power impedance)
+  "Calculate voltage from power and impedance: V = sqrt(P * R)."
+  (sqrt (* power impedance)))
+
+(defun voltage-to-power (voltage impedance)
+  "Calculate power from voltage and impedance: P = V²/R."
+  (/ (* voltage voltage) impedance))
+
+;; S-Parameter calculations
+(defun reflection-coefficient (zload z0)
+  "Calculate reflection coefficient Γ = (ZL - Z0)/(ZL + Z0)."
+  (/ (- zload z0) (+ zload z0)))
+
+(defun reflection-coefficient-magnitude (gamma)
+  "Calculate magnitude of reflection coefficient from complex gamma."
+  (abs gamma))
+
+(defun vswr-from-reflection (gamma-magnitude)
+  "Calculate VSWR from reflection coefficient magnitude."
+  (/ (+ 1 gamma-magnitude) (- 1 gamma-magnitude)))
+
+(defun reflection-from-vswr (vswr)
+  "Calculate reflection coefficient magnitude from VSWR."
+  (/ (- vswr 1) (+ vswr 1)))
+
+(defun return-loss (gamma-magnitude)
+  "Calculate return loss in dB from reflection coefficient magnitude."
+  (- (* 20 (log gamma-magnitude 10))))
+
+(defun insertion-loss-db (s21-magnitude)
+  "Calculate insertion loss in dB from S21 magnitude."
+  (- (* 20 (log s21-magnitude 10))))
+
+;; Transmission line calculations
+(defun characteristic-impedance (inductance-per-length capacitance-per-length)
+  "Calculate characteristic impedance Z0 = sqrt(L/C)."
+  (sqrt (/ inductance-per-length capacitance-per-length)))
+
+(defun propagation-velocity (inductance-per-length capacitance-per-length)
+  "Calculate propagation velocity v = 1/sqrt(LC)."
+  (/ 1 (sqrt (* inductance-per-length capacitance-per-length))))
+
+(defun electrical-length (physical-length wavelength)
+  "Calculate electrical length in degrees."
+  (* 360 (/ physical-length wavelength)))
+
+(defun wavelength-in-medium (frequency velocity)
+  "Calculate wavelength in medium: λ = v/f."
+  (/ velocity frequency))
+
+(defun cable-loss (loss-per-length length-meters)
+  "Calculate total cable loss in dB."
+  (* loss-per-length length-meters))
+
+(defun cable-loss-with-frequency (loss-coeff frequency-mhz length-meters)
+  "Calculate cable loss in dB with frequency dependence: Loss = k*sqrt(f)*L."
+  (* loss-coeff (sqrt frequency-mhz) length-meters))
+
+;; Impedance matching
+(defun l-network-series-inductor (r-source r-load q-factor)
+  "Calculate series inductor for L-network matching."
+  (let ((x (* q-factor r-source)))
+    (/ x (* 2 pi frequency))))
+
+(defun l-network-shunt-capacitor (r-source r-load q-factor frequency)
+  "Calculate shunt capacitor for L-network matching."
+  (let ((x (/ r-load q-factor)))
+    (/ 1 (* 2 pi frequency x))))
+
+(defun quarter-wave-transformer-impedance (z1 z2)
+  "Calculate impedance of quarter-wave transformer: Z = sqrt(Z1*Z2)."
+  (sqrt (* z1 z2)))
+
+;; Noise calculations
+(defun noise-figure-db (signal-in signal-out noise-in noise-out)
+  "Calculate noise figure in dB: NF = 10*log((Si/Ni)/(So/No))."
+  (let ((snr-in (/ signal-in noise-in))
+        (snr-out (/ signal-out noise-out)))
+    (* 10 (log (/ snr-in snr-out) 10))))
+
+(defun noise-temperature (noise-figure-db)
+  "Calculate equivalent noise temperature from noise figure."
+  (let ((nf-ratio (expt 10 (/ noise-figure-db 10))))
+    (* 290 (- nf-ratio 1))))
+
+(defun friis-noise-formula (nf1-db nf2-db gain1-db)
+  "Calculate total noise figure of cascaded amplifiers."
+  (let ((nf1 (expt 10 (/ nf1-db 10)))
+        (nf2 (expt 10 (/ nf2-db 10)))
+        (g1 (expt 10 (/ gain1-db 10))))
+    (+ nf1 (/ (- nf2 1) g1))))
+
+;; Filter calculations
+(defun lowpass-cutoff-frequency (resistance capacitance)
+  "Calculate cutoff frequency for RC lowpass filter."
+  (/ 1 (* 2 pi resistance capacitance)))
+
+(defun highpass-cutoff-frequency (resistance capacitance)
+  "Calculate cutoff frequency for RC highpass filter."
+  (/ 1 (* 2 pi resistance capacitance)))
+
+(defun q-factor-rlc (resistance inductance capacitance)
+  "Calculate Q factor for RLC circuit."
+  (/ (sqrt (/ inductance capacitance)) resistance))
+
+(defun resonant-frequency-lc (inductance capacitance)
+  "Calculate resonant frequency: f = 1/(2π√LC)."
+  (/ 1 (* 2 pi (sqrt (* inductance capacitance)))))
+
+;; Antenna calculations
+(defun free-space-path-loss (distance-km frequency-mhz)
+  "Calculate free space path loss in dB."
+  (+ (* 20 (log distance-km 10))
+     (* 20 (log frequency-mhz 10))
+     32.44))
+
+(defun effective-radiated-power (transmitter-power-dbm antenna-gain-dbi cable-loss-db)
+  "Calculate effective radiated power (ERP) in dBm."
+  (+ transmitter-power-dbm antenna-gain-dbi (- cable-loss-db)))
+
+(defun link-budget (tx-power-dbm tx-gain-dbi rx-gain-dbi path-loss-db cable-losses-db)
+  "Calculate received power in link budget analysis."
+  (- (+ tx-power-dbm tx-gain-dbi rx-gain-dbi) path-loss-db cable-losses-db))
+
+(defun dipole-length (frequency-mhz)
+  "Calculate half-wave dipole length in meters."
+  (/ 150 frequency-mhz))
+
+(defun antenna-aperture (gain-dbi frequency-hz)
+  "Calculate effective antenna aperture in square meters."
+  (let ((gain-ratio (expt 10 (/ gain-dbi 10)))
+        (wavelength (/ 3e8 frequency-hz)))
+    (/ (* gain-ratio wavelength wavelength) (* 4 pi))))
+
+;; Smith Chart calculations
+(defun impedance-to-admittance (z-real z-imag z0)
+  "Convert impedance to admittance on Smith chart."
+  (let* ((z-norm-real (/ z-real z0))
+         (z-norm-imag (/ z-imag z0))
+         (denominator (+ (* z-norm-real z-norm-real) (* z-norm-imag z-norm-imag))))
+    (values (/ z-norm-real denominator)
+            (/ (- z-norm-imag) denominator))))
+
+(defun normalized-impedance (z-real z-imag z0)
+  "Normalize impedance to characteristic impedance."
+  (values (/ z-real z0) (/ z-imag z0)))
+
+;; Time domain reflectometry
+(defun tdr-distance-to-fault (time-ns velocity-factor)
+  "Calculate distance to fault from TDR measurement."
+  (let ((c-speed 3e8))  ; Speed of light in m/s
+    (* 0.5 (* time-ns 1e-9) (* velocity-factor c-speed))))
+
+(defun velocity-factor-coax (dielectric-constant)
+  "Calculate velocity factor for coaxial cable."
+  (/ 1 (sqrt dielectric-constant)))
+
+;; Example usage:
+;; (watts-to-dbm 0.001)                    ; 0 dBm
+;; (vswr-from-reflection 0.1)              ; VSWR = 1.22
+;; (free-space-path-loss 1.0 1000)        ; Path loss at 1 km, 1 GHz
+;; (quarter-wave-transformer-impedance 50 75)  ; 61.24 ohms
 
