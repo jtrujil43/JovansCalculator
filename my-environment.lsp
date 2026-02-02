@@ -47,7 +47,7 @@
  ((and (listp expr) (eq (car expr) '*))
   (list '+
 	(list '* (symbolic-derivative (second expr) var) (third expr))
-	(list '* (second expr) (symbolic-derivative (thrid expr) var))))
+	(list '* (second expr) (symbolic-derivative (third expr) var))))
  
  ;; Default case (unsupported expressions).
  (t 'unsupported)))
@@ -132,5 +132,6 @@
 	    (aref my-matrix i j)))
       (format t "~a" element))))))
 
-(load "/home/jovan/devel/Xlisp_code/JovansCalculator/my-electrical.lsp")
-(load "/home/jovan/devel/Xlisp_code/JovansCalculator/my-quantum.lsp")
+(load "/home/jovan/devel/Xlispstat_code/JovansCalculator/my-electrical.lsp")
+(load "/home/jovan/devel/Xlispstat_code/JovansCalculator/my-quantum.lsp")
+(load "/home/jovan/devel/Xlispstat_code/JovansCalculator/help.lsp")
