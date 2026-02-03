@@ -23,12 +23,13 @@
 (defun initialize-help-system ()
   "Initialize the help system by loading data from category files."
   (setf *help-functions* nil)
-  (load "help_data/mathematical.lsp")
-  (load "help_data/matrix_operations.lsp")
-  (load "help_data/electrical_engineering.lsp")
-  (load "help_data/quantum_physics.lsp")
-  (load "help_data/chemistry.lsp")
-  (load "help_data/utilities.lsp")
+  (let ((base-dir (make-pathname :directory (pathname-directory *load-pathname*))))
+    (load (merge-pathnames "help_data/mathematical.lsp" base-dir))
+    (load (merge-pathnames "help_data/matrix_operations.lsp" base-dir))
+    (load (merge-pathnames "help_data/electrical_engineering.lsp" base-dir))
+    (load (merge-pathnames "help_data/quantum_physics.lsp" base-dir))
+    (load (merge-pathnames "help_data/chemistry.lsp" base-dir))
+    (load (merge-pathnames "help_data/utilities.lsp" base-dir)))
   ;; Build sorted list for consistent indexing
   (build-sorted-help-list))
 
