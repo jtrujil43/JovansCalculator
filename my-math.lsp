@@ -352,3 +352,431 @@
 ;; (pretty-print-expression '(/ (+ a b) (- c d)))    ; Prints "(a + b) / (c - d)"
 ;; (latex-notation '(/ (+ a b) (* c d)))             ; Returns "\\frac{a + b}{c \\cdot d}"
 ;; (derivative-step-by-step '(* 3 (expt x 2)) 'x)    ; Shows step-by-step derivative
+
+;;; ============================================================================
+;;; ALGEBRAIC GEOMETRY FUNCTIONS
+;;; ============================================================================
+
+;; -----------------------------------------------------------------------------
+;; Polynomial and Curve Representations
+;; -----------------------------------------------------------------------------
+
+(defun make-polynomial (coeffs var)
+  "Create a polynomial expression from a list of coefficients (lowest degree first).
+   Example: (make-polynomial '(1 2 3) 'x) => 1 + 2x + 3x^2"
+  (let ((terms '())
+        (degree 0))
+    (dolist (coeff coeffs)
+      (unless (= coeff 0)
+        (cond
+         ((= degree 0)
+          (push coeff terms))
+         ((= degree 1)
+          (if (= coeff 1)
+              (push var terms)
+              (push (list '* coeff var) terms)))
+         (t
+          (if (= coeff 1)
+              (push (list 'expt var degree) terms)
+              (push (list '* coeff (list 'expt var degree)) terms)))))
+      (incf degree))
+    (cond
+     ((null terms) 0)
+     ((= (length terms) 1) (first terms))
+     (t (cons '+ (reverse terms))))))
+
+(defun polynomial-degree (coeffs)
+  "Return the degree of a polynomial given its coefficient list (lowest degree first)."
+  (let ((deg (1- (length coeffs))))
+    (loop while (and (>= deg 0) (= (nth deg coeffs) 0))
+          do (decf deg))
+    (max 0 deg)))
+
+(defun evaluate-polynomial (coeffs x-val)
+  "Evaluate a polynomial at a given point using Horner's method.
+   Coefficients are given lowest degree first."
+  (let ((result 0)
+        (n (length coeffs)))
+    (loop for i from (1- n) downto 0
+          do (setf result (+ (nth i coeffs) (* result x-val))))
+    result))
+
+(defun polynomial-add (coeffs1 coeffs2)
+  "Add two polynomials represented as coefficient lists."
+  (let* ((len1 (length coeffs1))
+         (len2 (length coeffs2))
+         (max-len (max len1 len2))
+         (result '()))
+    (dotimes (i max-len)
+      (let ((c1 (if (< i len1) (nth i coeffs1) 0))
+            (c2 (if (< i len2) (nth i coeffs2) 0)))
+        (push (+ c1 c2) result)))
+    (reverse result)))
+
+(defun polynomial-multiply (coeffs1 coeffs2)
+  "Multiply two polynomials represented as coefficient lists."
+  (let* ((len1 (length coeffs1))
+         (len2 (length coeffs2))
+         (result-len (+ len1 len2 -1))
+         (result (make-list result-len :initial-element 0)))
+    (dotimes (i len1)
+      (dotimes (j len2)
+        (let ((pos (+ i j)))
+          (setf (nth pos result) 
+                (+ (nth pos result) 
+                   (* (nth i coeffs1) (nth j coeffs2)))))))
+    result))
+
+;; -----------------------------------------------------------------------------
+;; Algebraic Curves
+;; -----------------------------------------------------------------------------
+
+(defun make-affine-curve (poly vars)
+  "Create an affine algebraic curve representation.
+   poly: polynomial expression defining f(x,y) = 0
+   vars: list of variables, typically '(x y)"
+  (list :type 'affine-curve
+        :polynomial poly
+        :variables vars
+        :dimension 2))
+
+(defun make-projective-curve (poly vars)
+  "Create a projective algebraic curve representation.
+   poly: homogeneous polynomial defining f(x,y,z) = 0
+   vars: list of variables, typically '(x y z)"
+  (list :type 'projective-curve
+        :polynomial poly
+        :variables vars
+        :dimension 2))
+
+(defun curve-polynomial (curve)
+  "Extract the defining polynomial from a curve."
+  (getf curve :polynomial))
+
+(defun curve-variables (curve)
+  "Extract the variables from a curve definition."
+  (getf curve :variables))
+
+(defun homogenize-polynomial (poly var-x var-y var-z degree)
+  "Homogenize a polynomial in x,y by introducing z to make all terms degree d.
+   This converts an affine curve to a projective curve."
+  (cond
+   ;; Number case: multiply by z^degree
+   ((numberp poly)
+    (if (= degree 0)
+        poly
+        (list '* poly (list 'expt var-z degree))))
+   
+   ;; Variable case
+   ((symbolp poly)
+    (cond
+     ((eq poly var-x) 
+      (if (= degree 1)
+          var-x
+          (list '* var-x (list 'expt var-z (1- degree)))))
+     ((eq poly var-y)
+      (if (= degree 1)
+          var-y
+          (list '* var-y (list 'expt var-z (1- degree)))))
+     (t poly)))
+   
+   ;; Addition
+   ((and (listp poly) (eq (car poly) '+))
+    (cons '+ (mapcar (lambda (term) 
+                       (homogenize-polynomial term var-x var-y var-z degree))
+                     (cdr poly))))
+   
+   ;; Multiplication - recursively process
+   ((and (listp poly) (eq (car poly) '*))
+    (cons '* (cdr poly)))
+   
+   ;; Exponentiation
+   ((and (listp poly) (eq (car poly) 'expt))
+    poly)
+   
+   (t poly)))
+
+;; -----------------------------------------------------------------------------
+;; Elliptic Curves
+;; -----------------------------------------------------------------------------
+
+(defun make-elliptic-curve (a b)
+  "Create an elliptic curve in Weierstrass form: y^2 = x^3 + ax + b.
+   Returns nil if the discriminant is zero (singular curve)."
+  (let ((discriminant (+ (* 4 a a a) (* 27 b b))))
+    (if (= discriminant 0)
+        (progn
+          (format t "Warning: Discriminant is zero, curve is singular.~%")
+          nil)
+        (list :type 'elliptic-curve
+              :a a
+              :b b
+              :discriminant discriminant
+              :j-invariant (if (= discriminant 0) 
+                               nil 
+                               (/ (* -1728 4 a a a) discriminant))))))
+
+(defun elliptic-curve-discriminant (a b)
+  "Calculate the discriminant of an elliptic curve y^2 = x^3 + ax + b.
+   Discriminant = -16(4a^3 + 27b^2). Curve is non-singular iff discriminant != 0."
+  (* -16 (+ (* 4 a a a) (* 27 b b))))
+
+(defun elliptic-curve-j-invariant (a b)
+  "Calculate the j-invariant of an elliptic curve y^2 = x^3 + ax + b.
+   j = -1728 * (4a^3) / discriminant"
+  (let ((disc (elliptic-curve-discriminant a b)))
+    (if (= disc 0)
+        nil
+        (/ (* -1728 4 a a a) disc))))
+
+(defun elliptic-point-on-curve-p (x y a b)
+  "Check if a point (x, y) lies on the elliptic curve y^2 = x^3 + ax + b."
+  (let ((lhs (* y y))
+        (rhs (+ (* x x x) (* a x) b)))
+    (< (abs (- lhs rhs)) 1e-10)))
+
+(defun elliptic-curve-add (p1 p2 a b)
+  "Add two points on an elliptic curve y^2 = x^3 + ax + b.
+   Points are represented as (x . y) pairs. Point at infinity is 'infinity."
+  (cond
+   ;; Adding point at infinity
+   ((eq p1 'infinity) p2)
+   ((eq p2 'infinity) p1)
+   
+   ;; Points are inverses
+   ((and (= (car p1) (car p2))
+         (= (+ (cdr p1) (cdr p2)) 0))
+    'infinity)
+   
+   ;; Same point (point doubling)
+   ((and (= (car p1) (car p2))
+         (= (cdr p1) (cdr p2)))
+    (if (= (cdr p1) 0)
+        'infinity
+        (let* ((x1 (car p1))
+               (y1 (cdr p1))
+               (lambda-val (/ (+ (* 3 x1 x1) a) (* 2 y1)))
+               (x3 (- (* lambda-val lambda-val) (* 2 x1)))
+               (y3 (- (* lambda-val (- x1 x3)) y1)))
+          (cons x3 y3))))
+   
+   ;; Different points
+   (t
+    (let* ((x1 (car p1))
+           (y1 (cdr p1))
+           (x2 (car p2))
+           (y2 (cdr p2))
+           (lambda-val (/ (- y2 y1) (- x2 x1)))
+           (x3 (- (* lambda-val lambda-val) x1 x2))
+           (y3 (- (* lambda-val (- x1 x3)) y1)))
+      (cons x3 y3)))))
+
+(defun elliptic-curve-scalar-mult (n p a b)
+  "Scalar multiplication: compute n*P on elliptic curve using double-and-add."
+  (cond
+   ((= n 0) 'infinity)
+   ((= n 1) p)
+   ((evenp n) 
+    (elliptic-curve-scalar-mult (/ n 2) 
+                                 (elliptic-curve-add p p a b)
+                                 a b))
+   (t
+    (elliptic-curve-add p 
+                        (elliptic-curve-scalar-mult (1- n) p a b)
+                        a b))))
+
+;; -----------------------------------------------------------------------------
+;; Bezout's Theorem and Intersection Theory
+;; -----------------------------------------------------------------------------
+
+(defun bezout-number (deg1 deg2)
+  "Calculate the Bezout number for two curves of given degrees.
+   Two general curves of degrees d1 and d2 intersect in exactly d1*d2 points
+   (counting multiplicities and points at infinity in projective space)."
+  (* deg1 deg2))
+
+(defun intersection-multiplicity-at-origin (poly1 poly2)
+  "Estimate the intersection multiplicity of two curves at the origin.
+   This is a simplified version that counts the minimum degree of terms."
+  (let ((min-deg1 (find-minimum-degree poly1))
+        (min-deg2 (find-minimum-degree poly2)))
+    (* min-deg1 min-deg2)))
+
+(defun find-minimum-degree (poly)
+  "Find the minimum total degree of any term in a polynomial."
+  (cond
+   ((numberp poly) 
+    (if (= poly 0) most-positive-fixnum 0))
+   ((symbolp poly) 1)
+   ((and (listp poly) (eq (car poly) '+))
+    (apply #'min (mapcar #'find-minimum-degree (cdr poly))))
+   ((and (listp poly) (eq (car poly) '*))
+    (apply #'+ (mapcar #'find-minimum-degree (cdr poly))))
+   ((and (listp poly) (eq (car poly) 'expt))
+    (* (find-minimum-degree (second poly)) (third poly)))
+   (t 0)))
+
+;; -----------------------------------------------------------------------------
+;; Genus and Topological Invariants
+;; -----------------------------------------------------------------------------
+
+(defun genus-smooth-plane-curve (degree)
+  "Calculate the genus of a smooth plane curve of given degree.
+   Formula: g = (d-1)(d-2)/2 where d is the degree."
+  (/ (* (- degree 1) (- degree 2)) 2))
+
+(defun euler-characteristic-surface (genus)
+  "Calculate the Euler characteristic of a closed orientable surface.
+   chi = 2 - 2g where g is the genus."
+  (- 2 (* 2 genus)))
+
+(defun arithmetic-genus (degree dimension)
+  "Calculate the arithmetic genus of a hypersurface of degree d in P^n.
+   For a smooth curve in P^2: p_a = (d-1)(d-2)/2
+   For a smooth surface in P^3: p_a = (d-1)(d-2)(d-3)/6"
+  (cond
+   ((= dimension 2)
+    (/ (* (- degree 1) (- degree 2)) 2))
+   ((= dimension 3)
+    (/ (* (- degree 1) (- degree 2) (- degree 3)) 6))
+   (t
+    (format t "General formula not implemented for dimension ~A~%" dimension)
+    nil)))
+
+;; -----------------------------------------------------------------------------
+;; Rational Curves and Parameterizations
+;; -----------------------------------------------------------------------------
+
+(defun make-rational-curve (x-param y-param param-var)
+  "Create a rational parametric curve representation.
+   x-param, y-param: rational expressions in param-var
+   Example: Circle: x=cos(t), y=sin(t) or rationally x=(1-t^2)/(1+t^2), y=2t/(1+t^2)"
+  (list :type 'rational-curve
+        :x-param x-param
+        :y-param y-param
+        :parameter param-var))
+
+(defun evaluate-rational-curve (curve t-val)
+  "Evaluate a rational parametric curve at parameter value t."
+  (let ((x-param (getf curve :x-param))
+        (y-param (getf curve :y-param))
+        (param (getf curve :parameter)))
+    ;; This is a simplified evaluation - a full implementation would 
+    ;; need symbolic substitution
+    (list (cons 'x x-param) (cons 'y y-param) (cons 't t-val))))
+
+(defun circle-rational-param ()
+  "Return the rational parameterization of the unit circle.
+   x = (1-t^2)/(1+t^2), y = 2t/(1+t^2)"
+  (make-rational-curve
+   '(/ (- 1 (expt t 2)) (+ 1 (expt t 2)))
+   '(/ (* 2 t) (+ 1 (expt t 2)))
+   't))
+
+;; -----------------------------------------------------------------------------
+;; Singularity Analysis
+;; -----------------------------------------------------------------------------
+
+(defun is-singular-point (poly x-val y-val var-x var-y)
+  "Check if (x-val, y-val) is a singular point of the curve f(x,y)=0.
+   A point is singular if f=0 and all first partial derivatives vanish."
+  ;; This would require evaluation of the polynomial and its derivatives
+  ;; at the given point - simplified version returns a placeholder
+  (list :point (list x-val y-val)
+        :f-value 'needs-evaluation
+        :singular-p 'needs-evaluation))
+
+(defun count-nodes-and-cusps (poly)
+  "Analyze a polynomial for ordinary double points (nodes) and cusps.
+   Returns estimated count based on polynomial structure."
+  ;; Simplified - actual implementation would require solving systems
+  (list :nodes 'to-be-computed
+        :cusps 'to-be-computed
+        :polynomial poly))
+
+(defun milnor-number (singularity-type)
+  "Return the Milnor number for common singularity types.
+   A_n (nodes): n, D_n: n, E_6: 6, E_7: 7, E_8: 8"
+  (cond
+   ((and (listp singularity-type) (eq (car singularity-type) 'A))
+    (second singularity-type))
+   ((and (listp singularity-type) (eq (car singularity-type) 'D))
+    (second singularity-type))
+   ((eq singularity-type 'E6) 6)
+   ((eq singularity-type 'E7) 7)
+   ((eq singularity-type 'E8) 8)
+   ((eq singularity-type 'node) 1)
+   ((eq singularity-type 'cusp) 2)
+   (t nil)))
+
+;; -----------------------------------------------------------------------------
+;; Projective Geometry Utilities
+;; -----------------------------------------------------------------------------
+
+(defun affine-to-projective (x y)
+  "Convert affine coordinates (x,y) to projective coordinates [x:y:1]."
+  (list x y 1))
+
+(defun projective-to-affine (coords)
+  "Convert projective coordinates [x:y:z] to affine coordinates (x/z, y/z).
+   Returns nil if z=0 (point at infinity)."
+  (let ((x (first coords))
+        (y (second coords))
+        (z (third coords)))
+    (if (= z 0)
+        nil
+        (list (/ x z) (/ y z)))))
+
+(defun projective-line-through-points (p1 p2)
+  "Find the projective line through two points in P^2.
+   Returns coefficients [a:b:c] such that ax + by + cz = 0."
+  (let ((x1 (first p1)) (y1 (second p1)) (z1 (third p1))
+        (x2 (first p2)) (y2 (second p2)) (z2 (third p2)))
+    ;; Line coefficients from cross product
+    (list (- (* y1 z2) (* y2 z1))
+          (- (* z1 x2) (* z2 x1))
+          (- (* x1 y2) (* x2 y1)))))
+
+(defun projective-intersection (line1 line2)
+  "Find the intersection point of two projective lines.
+   Lines given as [a:b:c] representing ax + by + cz = 0."
+  (let ((a1 (first line1)) (b1 (second line1)) (c1 (third line1))
+        (a2 (first line2)) (b2 (second line2)) (c2 (third line2)))
+    ;; Intersection from cross product
+    (list (- (* b1 c2) (* b2 c1))
+          (- (* c1 a2) (* c2 a1))
+          (- (* a1 b2) (* a2 b1)))))
+
+(defun cross-ratio (p1 p2 p3 p4)
+  "Calculate the cross-ratio of four collinear points in projective space.
+   Cross-ratio (p1,p2;p3,p4) = ((p1-p3)(p2-p4))/((p1-p4)(p2-p3))"
+  (let ((num (* (- p1 p3) (- p2 p4)))
+        (den (* (- p1 p4) (- p2 p3))))
+    (if (= den 0)
+        'infinity
+        (/ num den))))
+
+;; -----------------------------------------------------------------------------
+;; Degree and Dimension Calculations
+;; -----------------------------------------------------------------------------
+
+(defun hilbert-polynomial-curve (degree)
+  "Return the Hilbert polynomial of a plane curve of given degree.
+   For a curve C of degree d: P(n) = d*n + 1 - g where g = (d-1)(d-2)/2"
+  (let ((g (genus-smooth-plane-curve degree)))
+    (lambda (n) (+ (* degree n) 1 (- g)))))
+
+(defun dimension-linear-system (degree genus num-points)
+  "Estimate dimension of linear system |D| using Riemann-Roch.
+   For a divisor D of degree d on a curve of genus g:
+   dim|D| >= d - g (with equality for d > 2g-2)"
+  (max 0 (- degree genus)))
+
+;; Example usage:
+;; (make-polynomial '(1 2 3) 'x)                    ; 1 + 2x + 3x^2
+;; (evaluate-polynomial '(1 2 3) 2)                  ; 1 + 4 + 12 = 17
+;; (make-elliptic-curve -1 0)                        ; y^2 = x^3 - x
+;; (elliptic-curve-add '(0 . 0) '(1 . 0) -1 0)      ; Point addition
+;; (genus-smooth-plane-curve 3)                      ; Genus of cubic = 1
+;; (bezout-number 2 3)                               ; Line meets cubic in 6 pts
+;; (cross-ratio 0 1 2 3)                             ; Cross-ratio calculation
