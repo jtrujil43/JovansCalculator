@@ -237,7 +237,279 @@
   (let ((bohr-magneton 9.2740100783e-24)) ; Bohr magneton (J/T)
     (* (- g-factor) bohr-magneton magnetic-field ms)))
 
+;; Additional physical constants
+(defconstant gravitational-constant 6.67430e-11) ; G in m³/(kg⋅s²)
+(defconstant permittivity-vacuum 8.8541878128e-12) ; ε₀ in F/m
+(defconstant permeability-vacuum 1.25663706212e-6) ; μ₀ in H/m
+
+;; ============================================================
+;; Functions for hydrogen-like atoms (with atomic number Z)
+;; ============================================================
+
+(defun calculate-bohr-radius (n z)
+  "Calculate the Bohr radius for a hydrogen-like atom with atomic number z."
+  (let ((a0 5.29177210903e-11)) ; Bohr radius in meters
+    (/ (* a0 n n) z)))
+
+(defun calculate-energy-level (n z)
+  "Calculate the energy level of a hydrogen-like atom (in eV)."
+  (let ((rydberg-energy 13.6)) ; eV
+    (/ (* (- rydberg-energy) z z) (* n n))))
+
+;; ============================================================
+;; Photon calculations
+;; ============================================================
+
+(defun calculate-photon-energy (wavelength)
+  "Calculate the energy of a photon given its wavelength (in meters). Returns energy in Joules."
+  (/ (* planck-constant c-light) wavelength))
+
+(defun calculate-photon-wavelength (energy)
+  "Calculate the wavelength of a photon given its energy (in Joules). Returns wavelength in meters."
+  (/ (* planck-constant c-light) energy))
+
+(defun calculate-de-broglie-wavelength (mass velocity)
+  "Calculate the de Broglie wavelength of a particle given mass and velocity."
+  (/ planck-constant (* mass velocity)))
+
+;; ============================================================
+;; Tunneling probability (alternative formulation)
+;; ============================================================
+
+(defun calculate-tunneling-probability (v0 e width mass)
+  "Calculate the tunneling probability of a particle through a barrier.
+   v0 = barrier height (Joules), e = particle energy (Joules), 
+   width = barrier width (meters), mass = particle mass (kg)."
+  (if (>= e v0)
+      1.0  ; Classical case - particle has enough energy
+      (let* ((kappa (sqrt (/ (* 2 mass (- v0 e)) (* reduced-planck reduced-planck))))
+             (exponent (* -2 kappa width)))
+        (exp exponent))))
+
+;; ============================================================
+;; Electromagnetic functions
+;; ============================================================
+
+(defun calculate-coulomb-force (q1 q2 r)
+  "Calculate the Coulomb force between two point charges.
+   q1, q2 = charges (Coulombs), r = distance (meters). Returns force in Newtons."
+  (let ((k (/ 1 (* 4 pi permittivity-vacuum))))
+    (/ (* k q1 q2) (* r r))))
+
+(defun calculate-electric-field (q r)
+  "Calculate the electric field due to a point charge.
+   q = charge (Coulombs), r = distance (meters). Returns field in V/m."
+  (let ((k (/ 1 (* 4 pi permittivity-vacuum))))
+    (/ (* k q) (* r r))))
+
+(defun calculate-magnetic-field (current distance)
+  "Calculate the magnetic field due to a long current-carrying wire.
+   current = current (Amperes), distance = distance from wire (meters). Returns field in Tesla."
+  (/ (* permeability-vacuum current) (* 2 pi distance)))
+
+(defun calculate-lorentz-force (q e-field v b-field)
+  "Calculate the Lorentz force on a charged particle.
+   q = charge, e-field = (Ex Ey Ez), v = (vx vy vz), b-field = (Bx By Bz).
+   Returns force as (Fx Fy Fz)."
+  (let* ((ex (first e-field)) (ey (second e-field)) (ez (third e-field))
+         (vx (first v)) (vy (second v)) (vz (third v))
+         (bx (first b-field)) (by (second b-field)) (bz (third b-field))
+         ;; v × B cross product
+         (cross-x (- (* vy bz) (* vz by)))
+         (cross-y (- (* vz bx) (* vx bz)))
+         (cross-z (- (* vx by) (* vy bx)))
+         ;; F = q(E + v × B)
+         (fx (* q (+ ex cross-x)))
+         (fy (* q (+ ey cross-y)))
+         (fz (* q (+ ez cross-z))))
+    (list fx fy fz)))
+
+(defun calculate-compton-wavelength (mass)
+  "Calculate the Compton wavelength of a particle. λc = h/(mc)"
+  (/ planck-constant (* mass c-light)))
+
+;; ============================================================
+;; Fundamental constants calculations
+;; ============================================================
+
+(defun calculate-rydberg-constant (atomic-mass)
+  "Calculate the Rydberg constant for a given atomic mass (in atomic mass units)."
+  (let* ((amu 1.66053906660e-27) ; atomic mass unit in kg
+         (m-nucleus (* atomic-mass amu))
+         (reduced-mass (/ (* electron-mass m-nucleus) (+ electron-mass m-nucleus)))
+         (r-infinity 10973731.568160)) ; Rydberg constant for infinite mass
+    (* r-infinity (/ reduced-mass electron-mass))))
+
+(defun calculate-fine-structure-constant ()
+  "Calculate the fine-structure constant α ≈ 1/137."
+  (/ (* elementary-charge elementary-charge)
+     (* 4 pi permittivity-vacuum reduced-planck c-light)))
+
+(defun calculate-planck-length ()
+  "Calculate the Planck length √(ℏG/c³)."
+  (sqrt (/ (* reduced-planck gravitational-constant)
+           (* c-light c-light c-light))))
+
+(defun calculate-planck-mass ()
+  "Calculate the Planck mass √(ℏc/G)."
+  (sqrt (/ (* reduced-planck c-light) gravitational-constant)))
+
+(defun calculate-planck-time ()
+  "Calculate the Planck time √(ℏG/c⁵)."
+  (sqrt (/ (* reduced-planck gravitational-constant)
+           (* c-light c-light c-light c-light c-light))))
+
+(defun calculate-planck-temperature ()
+  "Calculate the Planck temperature √(ℏc⁵/(G k²))."
+  (/ (calculate-planck-mass) 
+     (/ boltzmann-k (* c-light c-light))))
+
+;; ============================================================
+;; Gravitational and astrophysics functions
+;; ============================================================
+
+(defun calculate-schwarzschild-radius (mass)
+  "Calculate the Schwarzschild radius of a black hole. rs = 2GM/c²"
+  (/ (* 2 gravitational-constant mass) (* c-light c-light)))
+
+(defun calculate-hawking-temperature (mass)
+  "Calculate the Hawking temperature of a black hole."
+  (/ (* reduced-planck c-light c-light c-light)
+     (* 8 pi gravitational-constant mass boltzmann-k)))
+
+(defun calculate-gravitational-force (m1 m2 r)
+  "Calculate the gravitational force between two masses.
+   m1, m2 = masses (kg), r = distance (meters). Returns force in Newtons."
+  (/ (* gravitational-constant m1 m2) (* r r)))
+
+(defun calculate-gravitational-potential-energy (m1 m2 r)
+  "Calculate the gravitational potential energy of two masses.
+   Returns energy in Joules (negative value)."
+  (- (/ (* gravitational-constant m1 m2) r)))
+
+(defun calculate-escape-velocity (mass radius)
+  "Calculate the escape velocity from a celestial body.
+   mass = mass of body (kg), radius = radius (meters). Returns velocity in m/s."
+  (sqrt (/ (* 2 gravitational-constant mass) radius)))
+
+(defun calculate-orbital-velocity (mass radius altitude)
+  "Calculate the orbital velocity of a satellite.
+   mass = central body mass (kg), radius = body radius (m), altitude = orbit altitude (m)."
+  (sqrt (/ (* gravitational-constant mass) (+ radius altitude))))
+
+;; ============================================================
+;; Special relativity functions
+;; ============================================================
+
+(defun calculate-time-dilation (velocity)
+  "Calculate the time dilation factor γ for a given velocity (as fraction of c).
+   velocity should be between 0 and 1 (e.g., 0.99 for 99% speed of light)."
+  (/ 1 (sqrt (- 1 (* velocity velocity)))))
+
+(defun calculate-length-contraction (length velocity)
+  "Calculate the contracted length for a given proper length and velocity.
+   velocity should be as fraction of c."
+  (* length (sqrt (- 1 (* velocity velocity)))))
+
+(defun calculate-relativistic-mass (mass velocity)
+  "Calculate the relativistic mass for a given rest mass and velocity.
+   velocity should be as fraction of c."
+  (* mass (calculate-time-dilation velocity)))
+
+(defun calculate-relativistic-kinetic-energy (mass velocity)
+  "Calculate the relativistic kinetic energy for a given rest mass and velocity.
+   velocity should be as fraction of c. Returns energy in Joules."
+  (let ((gamma (calculate-time-dilation velocity)))
+    (* mass c-light c-light (- gamma 1))))
+
+(defun calculate-mass-energy-equivalence (mass)
+  "Calculate the energy equivalent of a given mass using E = mc². Returns energy in Joules."
+  (* mass c-light c-light))
+
+;; ============================================================
+;; Pauli matrices and braiding operations
+;; ============================================================
+
+(defun pauli-matrices ()
+  "Return the three Pauli matrices as a list of 2x2 arrays.
+   Returns (σx σy σz)."
+  (let ((sigma-x (make-array '(2 2) :initial-contents '((0 1) (1 0))))
+        (sigma-y (make-array '(2 2) :initial-contents 
+                             (list (list #C(0 0) #C(0 -1)) 
+                                   (list #C(0 1) #C(0 0)))))
+        (sigma-z (make-array '(2 2) :initial-contents '((1 0) (0 -1)))))
+    (list sigma-x sigma-y sigma-z)))
+
+(defun braiding-matrix (sigma)
+  "Generate braiding matrix for non-Abelian anyon statistics.
+   sigma = 1, 2, or 3 selects which Pauli matrix to use.
+   Returns R = exp(i π σ/4)."
+  (let* ((paulis (pauli-matrices))
+         (pauli-mat (nth (1- sigma) paulis))
+         (phase (/ pi 4))
+         (result (make-array '(2 2))))
+    ;; For σ₁ (sigma-x): R = (1/√2)(I + iσx)
+    ;; For σ₂ (sigma-y): R = (1/√2)(I + iσy)  
+    ;; For σ₃ (sigma-z): R = (1/√2)(I + iσz)
+    (let ((scale (/ 1 (sqrt 2))))
+      (cond
+        ((= sigma 1)
+         ;; R = (1/√2)(I + iσx) = (1/√2)((1 i)(i 1))
+         (setf (aref result 0 0) (make-complex scale 0))
+         (setf (aref result 0 1) (make-complex 0 scale))
+         (setf (aref result 1 0) (make-complex 0 scale))
+         (setf (aref result 1 1) (make-complex scale 0)))
+        ((= sigma 2)
+         ;; R = (1/√2)(I + iσy) = (1/√2)((1 1)(-1 1))
+         (setf (aref result 0 0) (make-complex scale 0))
+         (setf (aref result 0 1) (make-complex scale 0))
+         (setf (aref result 1 0) (make-complex (- scale) 0))
+         (setf (aref result 1 1) (make-complex scale 0)))
+        ((= sigma 3)
+         ;; R = (1/√2)(I + iσz) = (1/√2)((1+i 0)(0 1-i))
+         (setf (aref result 0 0) (make-complex scale scale))
+         (setf (aref result 0 1) (make-complex 0 0))
+         (setf (aref result 1 0) (make-complex 0 0))
+         (setf (aref result 1 1) (make-complex scale (- scale))))))
+    result))
+
+(defun matrix-2x2-multiply (a b)
+  "Multiply two 2x2 matrices."
+  (let ((result (make-array '(2 2))))
+    (dotimes (i 2)
+      (dotimes (j 2)
+        (setf (aref result i j)
+              (+ (* (aref a i 0) (aref b 0 j))
+                 (* (aref a i 1) (aref b 1 j))))))
+    result))
+
+(defun simulate-braiding ()
+  "Simulate braiding operations in non-Abelian anyon systems.
+   Demonstrates that braiding matrices do not commute (non-Abelian property)."
+  (let* ((r1 (braiding-matrix 1))
+         (r2 (braiding-matrix 2))
+         (r1-r2 (matrix-2x2-multiply r1 r2))
+         (r2-r1 (matrix-2x2-multiply r2 r1)))
+    (format t "Braiding Matrix R1 (σx):~%")
+    (format t "  [[~A, ~A]~%   [~A, ~A]]~%"
+            (aref r1 0 0) (aref r1 0 1) (aref r1 1 0) (aref r1 1 1))
+    (format t "~%Braiding Matrix R2 (σy):~%")
+    (format t "  [[~A, ~A]~%   [~A, ~A]]~%"
+            (aref r2 0 0) (aref r2 0 1) (aref r2 1 0) (aref r2 1 1))
+    (format t "~%R1 * R2:~%")
+    (format t "  [[~A, ~A]~%   [~A, ~A]]~%"
+            (aref r1-r2 0 0) (aref r1-r2 0 1) (aref r1-r2 1 0) (aref r1-r2 1 1))
+    (format t "~%R2 * R1:~%")
+    (format t "  [[~A, ~A]~%   [~A, ~A]]~%"
+            (aref r2-r1 0 0) (aref r2-r1 0 1) (aref r2-r1 1 0) (aref r2-r1 1 1))
+    (format t "~%Non-Abelian property: R1*R2 ≠ R2*R1~%")
+    (values r1-r2 r2-r1)))
+
 ;; Example usage:
 ;; (de-broglie-wavelength 1e-24)  ; wavelength for momentum = 1e-24 kg⋅m/s
 ;; (hydrogen-energy-level 2)      ; energy of n=2 hydrogen level
 ;; (tunnel-probability 1e-10 5e-19 1e-19 electron-mass)  ; tunneling probability
+;; (calculate-bohr-radius 1 1)    ; Bohr radius for hydrogen ground state
+;; (calculate-fine-structure-constant) ; ~1/137
+;; (calculate-time-dilation 0.99)  ; time dilation at 99% speed of light
+;; (simulate-braiding)            ; demonstrate non-Abelian braid statistics
