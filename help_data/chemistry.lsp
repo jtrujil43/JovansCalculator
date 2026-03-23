@@ -224,3 +224,69 @@
         :category "Chemistry"
         :example "(bragg-law 1 nil 2.5e-10 0.5236)")
       *help-functions*)
+
+;;; Electron Orbital Visualization
+
+(push (make-function-info
+        :name "associated-laguerre"
+        :description "Compute the associated Laguerre polynomial L_n^alpha(x) using recurrence."
+        :parameters "(n alpha x)"
+        :category "Chemistry"
+        :example "(associated-laguerre 2 1 1.0)")
+      *help-functions*)
+
+(push (make-function-info
+        :name "associated-legendre"
+        :description "Compute the associated Legendre polynomial P_l^m(x) for m >= 0."
+        :parameters "(l m x)"
+        :category "Chemistry"
+        :example "(associated-legendre 2 1 0.5)")
+      *help-functions*)
+
+(push (make-function-info
+        :name "spherical-harmonic-real"
+        :description "Compute real-valued spherical harmonic Y_l^m(theta, phi) for orbital visualization."
+        :parameters "(l m theta phi)"
+        :category "Chemistry"
+        :example "(spherical-harmonic-real 1 0 0.5 0.0)")
+      *help-functions*)
+
+(push (make-function-info
+        :name "radial-wavefunction"
+        :description "Compute the radial wavefunction R_nl(r) for a hydrogen-like atom in Bohr radii."
+        :parameters "(n l r)"
+        :category "Chemistry"
+        :example "(radial-wavefunction 2 1 1.0)")
+      *help-functions*)
+
+(push (make-function-info
+        :name "hydrogen-wavefunction-squared"
+        :description "Compute |psi_nlm|^2 probability density for a hydrogen atom at (r, theta, phi)."
+        :parameters "(n l m r theta phi)"
+        :category "Chemistry"
+        :example "(hydrogen-wavefunction-squared 1 0 0 1.0 0.5 0.0)")
+      *help-functions*)
+
+(push (make-function-info
+        :name "generate-orbital-points"
+        :description "Generate 3D point cloud for hydrogen orbital (n,l,m) via rejection sampling. Returns (xs ys zs)."
+        :parameters "(n l m &optional num-points)"
+        :category "Chemistry"
+        :example "(generate-orbital-points 2 1 0 500)")
+      *help-functions*)
+
+(push (make-function-info
+        :name "orbital-label"
+        :description "Generate a human-readable label (e.g. '2p (m=0)') for an orbital."
+        :parameters "(n l m)"
+        :category "Chemistry"
+        :example "(orbital-label 3 2 0)")
+      *help-functions*)
+
+(push (make-function-info
+        :name "plot-electron-orbital"
+        :description "Plot an electron orbital as a 3D spin-plot point cloud. Supports s,p,d,f orbitals with any valid orientation."
+        :parameters "(n l m &optional num-points)"
+        :category "Chemistry"
+        :example "(plot-electron-orbital 2 1 0)")
+      *help-functions*)
