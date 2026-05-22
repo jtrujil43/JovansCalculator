@@ -425,10 +425,10 @@
     (format t "~%Available categories with function counts:~%")
     (format t "==========================================~%")
     (dolist (cat-count category-counts)
-      (format t "  * ~A (~D function~P)~%" 
+      (format t "  * ~A (~D function~A)~%" 
               (car cat-count) 
               (cdr cat-count)
-              (cdr cat-count)))
+              (if (= (cdr cat-count) 1) "" "s")))
     (format t "~%Use (help-category \\\"category-name\\\") to see functions in a category.~%")
     (format t "Use (list-categories-only) for a simple category list.~%")))
 
