@@ -40,3 +40,6 @@ Need to document all the new functions I have added better too. Maybe this is th
 Added a nice help system thanks to GitHub CoPilot. Now I can add a general assortment of functions related to my favorite topics with just a simple prompt. 
 I now have my-chemistry.lsp, my-math.lsp, and my-matrix.lsp for various functions that I'm adding via CoPilot on VSCode. The help system is really the nicest thing about this little calculator I'm creating. 
 
+# 5/22/2026 #
+Copilot fixed a formatting problem in help.lsp, and then I realized my local copy was older than the github.com repository, so I had to merge the changes in order to pull the newer version and upload everything. Now I think everything is working correctly. I think the new version has more functions implemented that were previously stubs. 
+
