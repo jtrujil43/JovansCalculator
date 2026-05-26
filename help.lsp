@@ -91,7 +91,12 @@
   (format t "Usage: (help-function <index>)  - Get detailed help for function~%")
   (format t "       (help)                   - Show this help menu~%")
   (format t "       (help-category \\\"name\\\")   - Show functions in a category~%")
+  (format t "       (list-categories)        - Show categories with counts~%")
   (format t "       (list-categories-only)   - Show just category names~%")
+  (format t "       (add-help-function)      - Add new function~%")
+  (format t "       (edit-help-function \"name\") - Edit existing function~%")
+  (format t "       (remove-help-function \"name\") - Remove function~%")
+  (format t "       (save-help-file          - Save changes to disk~%")
   (format t "============================================~%"))
 
 ;; Get detailed help for a specific function by index
@@ -178,44 +183,39 @@
   "Interactively add a new function to the help system."
   (format t "~%Adding new function to help system~%")
   (format t "===================================~%")
-  
-  (format t "Function name: ")
-  (finish-output)
-  (let ((name (read-line)))
-    
-    (format t "Description: ")
-    (finish-output)
-    (let ((description (read-line)))
+  (flet ((prompt-line (prompt &optional required)
+           (let ((value ""))
+             (loop 
+               (format t "~A" prompt)
+               ;;; (finish-output)
+               (setf value (string-trim '(#\Space #\Tab #\Return #\Newline)
+                                        (read-line)))
+               (when (and required (= (length value) 0))
+                 (format t "This field cannot be blank.~%"))
+	     (when (or (not required) (> (length value) 0)) (return value))))))
+    (let ((name (prompt-line "Function name: " t))
+          (description (prompt-line "Description: " t))
+          (parameters (prompt-line "Parameters (e.g., '(x y z)'): "))
+          (category (prompt-line "Category: " t))
+          (example (prompt-line "Example usage: ")))
       
-      (format t "Parameters (e.g., '(x y z)'): ")
-      (finish-output)
-      (let ((parameters (read-line)))
+      ;; Create new function info
+      (let ((new-func (make-function-info
+                       :name name
+                       :description description
+                       :parameters parameters
+                       :category category
+                       :example example)))
         
-        (format t "Category: ")
-        (finish-output)
-        (let ((category (read-line)))
-          
-          (format t "Example usage: ")
-          (finish-output)
-          (let ((example (read-line)))
-            
-            ;; Create new function info
-            (let ((new-func (make-function-info
-                             :name name
-                             :description description
-                             :parameters parameters
-                             :category category
-                             :example example)))
-              
-              ;; Add to the global list
-              (push new-func *help-functions*)
-              
-              ;; Rebuild the sorted index
-              (build-sorted-help-list)
-              
-              (format t "~%Function '~A' added successfully!~%" name)
-              (format t "Index rebuilt. Use (help) to see updated list.~%")
-              (format t "Use (save-help-file) to save changes to disk.~%"))))))))
+        ;; Add to the global list
+        (push new-func *help-functions*)
+        
+        ;; Rebuild the sorted index
+        (build-sorted-help-list)
+        
+        (format t "~%Function '~A' added successfully!~%" name)
+        (format t "Index rebuilt. Use (help) to see updated list.~%")
+        (format t "Use (save-help-file) to save changes to disk.~%")))))
 
 (defun remove-help-function (func-name)
   "Remove a function from the help system by name."
@@ -280,7 +280,8 @@
 
 (defun save-help-file ()
   "Save the current help system data back to help.lsp file."
-  (let ((filename "/home/jovan/devel/Xlispstat_code/JovansCalculator/help.lsp"))
+  (let* ((base-dir (make-pathname :directory (pathname-directory *load-pathname*)))
+	 (filename (merge-pathnames "new-help.lsp" base-dir)))
     (with-open-file (stream filename :direction :output :if-exists :supersede)
       
       ;; Write file header

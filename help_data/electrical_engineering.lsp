@@ -231,3 +231,12 @@
         :category "Electrical Engineering"
         :example "(tdr-distance-to-fault 100 0.66)")
       *help-functions*)
+
+(push (make-function-info
+       :name "blanket-metal-resistance-colinear"
+       :description "Calculate the resistance of a thin metal film over a large area using known sheet resistance of metal."
+       :parameters "(sheet-res)"
+       :category "Electrical Engineering"
+       :example "(blanket-metal-resistance-colinear 0.31)")
+      *help-functions*)
+

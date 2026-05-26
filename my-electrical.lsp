@@ -9,6 +9,7 @@
 ;; Rev 1.0 - Added dielectric constant calculations. 
 ;; Rev 1.1 - Added tungsten needle max current calculations for DC and pulsed. 
 ;; Rev 1.2 - Added calculation for copper film thickness based on sheet resistivity measurement. 
+;; Rev 1.3 - Adding more sophisticated resistance calculations based on Kelvin probe geometry.
 
 (defconstant epsilon_0 8.854E-12)
 (defconstant copper_bulk_resistivity 1.7E-8) ;; Ohm-m
@@ -392,6 +393,10 @@ Vb))
 (defun velocity-factor-coax (dielectric-constant)
   "Calculate velocity factor for coaxial cable."
   (/ 1 (sqrt dielectric-constant)))
+
+(defun blanket-metal-resistance-colinear (sheet-res)
+  "Calculate the resistance of a thin metal film over a large area using known sheet resistance of metal." 
+  (/ (* (log 2) sheet-res) pi))
 
 ;; Example usage:
 ;; (watts-to-dbm 0.001)                    ; 0 dBm
